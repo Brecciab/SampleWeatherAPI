@@ -42,7 +42,7 @@ namespace WeatherDesktop
         {
             ResultsDisplay.Text = $"Making a simple call to weather based on zip{Environment.NewLine}";
 
-            CurrentWeather now = _weather.GetWeatherObjectByZipAsync(zipCode).GetAwaiter().GetResult();
+            CurrentWeather now = _weather.GetWeatherObjectByZipAsync(zipCode, "").GetAwaiter().GetResult();
             if (now.Cod == "200")
             {
                 ResultsDisplay.AppendText($"Result set successful {Environment.NewLine}");

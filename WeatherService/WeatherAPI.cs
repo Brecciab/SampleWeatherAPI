@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net.Http;
@@ -14,7 +13,7 @@ namespace WeatherService
     /// </summary>
     public class WeatherAPI
     {
-        private static readonly HttpClient _httpClient = new HttpClient();
+        private readonly HttpClient _httpClient = new HttpClient();
 
         // allows for mocking of file system access
         private readonly IFileSystem _fileSystem;
@@ -41,14 +40,16 @@ namespace WeatherService
         public List<Timer> Timers;
 
 
-        public WeatherAPI() : this(new FileSystem())
+        public WeatherAPI() : this(new FileSystem(), new HttpClient())
         {
+
         }
 
-        public WeatherAPI(IFileSystem fileSystem)
+        public WeatherAPI(IFileSystem fileSystem, HttpClient httpClient)
         {
             SetupParameters();
             _fileSystem = fileSystem;
+            _httpClient = httpClient;
         }
 
         private void SetupParameters()
@@ -90,14 +91,13 @@ namespace WeatherService
         /// </summary>
         /// <param name="zipCode">5 digit code used to look up a city</param>
         /// <returns>CurrentWeather object with the values returned from the Weather service</returns>
-        public async Task<CurrentWeather> GetWeatherObjectByZipAsync(string zipCode)
+        public async Task<CurrentWeather> GetWeatherObjectByZipAsync(string zipCode, string uri)
         {
             try
             {
                 var currentWeather = new CurrentWeather() { ZipCode = zipCode };
-                var input = GetWeatherByZipAsync(zipCode);
 
-                var result = await GetWeatherByZipAsync(zipCode);
+                var result = await GetWeatherByZipAsync(zipCode, uri);
 
                 currentWeather.ParseJson(result);
 
@@ -184,7 +184,7 @@ namespace WeatherService
         {
             try
             {
-                var currentWeather = GetWeatherObjectByZipAsync(zipCode).GetAwaiter().GetResult();
+                var currentWeather = GetWeatherObjectByZipAsync(zipCode, "").GetAwaiter().GetResult();
                 FireEvent("Writing to the file system for zip code " + zipCode);
 
                 // Concerned about using File append because of file locks
@@ -202,7 +202,7 @@ namespace WeatherService
         /// <summary>
         /// Used to make a single call to the external API with one zip code
         /// </summary>
-        public async Task<string> GetWeatherByZipAsync(string zipCode)
+        public async Task<string> GetWeatherByZipAsync(string zipCode, string uri)
         {
             try
             {
@@ -213,7 +213,13 @@ namespace WeatherService
                 }
                 //DEVNOTE: no "using" statement based on: https://ankitvijay.net/2016/09/25/dispose-httpclient-or-have-a-static-instance/
 
-                var result = _httpClient.GetAsync(new Uri(APIConfiguration.WeatherServiceFullURI(zipCode))).Result;
+                //Added to allow mocking of URI as well
+                if (string.IsNullOrEmpty(uri))
+                {
+                    uri = APIConfiguration.WeatherServiceFullURI(zipCode);
+                }
+
+                var result = _httpClient.GetAsync(new Uri(uri)).Result;
 
                 if (!result.IsSuccessStatusCode)
                 {

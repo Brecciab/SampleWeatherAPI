@@ -69,8 +69,7 @@ namespace WeatherService
             // I was having problems using the unit URI parameter
             if (!string.IsNullOrEmpty(temperature))
             {
-                double temp;
-                if (double.TryParse(temperature, out temp))
+                if (double.TryParse(temperature, out double temp))
                 {
                     temp = (temp - 273.15) * 9 / 5 + 32;
                     return temp.ToString();
@@ -81,9 +80,7 @@ namespace WeatherService
 
         public string ParseWindDirection(string degreeInput)
         {
-            double degree;
-
-            if (Double.TryParse(degreeInput, out degree))
+            if (Double.TryParse(degreeInput, out double degree))
             {
                 if (degree > 337.5) return "Northerly";
                 if (degree > 292.5) return "North Westerly";
