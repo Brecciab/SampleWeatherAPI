@@ -1,11 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WeatherService
 {
+    public enum DataSaveMethod
+    {
+        Unknown = 0,
+        FileSave = 1,
+        DatabaseSave = 2
+    };
+
     public class Configuration
     {
         /// <summary>
@@ -28,6 +32,8 @@ namespace WeatherService
         /// </summary>
         public string ZipInformationLocation { get; set; }
 
+        public DataSaveMethod DataSaveMethod { get; set; }
+
         public Configuration()
         {
             //Hard coded defaults 
@@ -36,6 +42,7 @@ namespace WeatherService
             // In production you would never use this
             SaveFileLocation = AppDomain.CurrentDomain.BaseDirectory + $"WeatherTestData_{DateTime.UtcNow.ToString("MMddyyyy")}.txt";
             ZipInformationLocation = AppDomain.CurrentDomain.BaseDirectory + $"ZipCodes.json";
+            DataSaveMethod = DataSaveMethod.FileSave;
         }
 
         /// <summary>

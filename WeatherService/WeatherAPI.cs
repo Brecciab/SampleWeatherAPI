@@ -137,12 +137,45 @@ namespace WeatherService
             ResetSaveFile(APIConfiguration.SaveFileLocation);
         }
 
+        /// <summary>
+        /// Set all timers in the Timers collection to enabled = false
+        /// </summary>
         public void StopTimers()
         {
             foreach (var item in Timers)
             {
                 item.Enabled = false;
             }
+        }
+
+        public bool SaveCurrentWeatherValues(CurrentWeather currentWeather)
+        {
+            try
+            {
+                switch (APIConfiguration.DataSaveMethod)
+                {
+                    case DataSaveMethod.FileSave:
+                        FireEvent("Saving to the file system for zip code " + currentWeather.ZipCode);
+                        // Concerned about using File append because of file locks
+                        _fileSystem.File.AppendAllText(APIConfiguration.SaveFileLocation, currentWeather.CreateLogLine() + Environment.NewLine);
+                        break;
+                    case DataSaveMethod.DatabaseSave:
+                        FireEvent("Saving to the database for zip code " + currentWeather.ZipCode);
+                        //TODO: add database code or wrapper
+                        break;
+                    default:
+                        FireEvent("Unknown save method for zip code " + currentWeather.ZipCode);
+                        break;
+                        
+                }
+                return true;
+            }
+            catch (Exception exp)
+            {
+                FireEvent($"Error trying to save the values for {currentWeather.ZipCode} {Environment.NewLine}Error: {exp.Message}");
+                return false;
+            }
+            
         }
 
         /// <summary>
@@ -184,11 +217,10 @@ namespace WeatherService
         {
             try
             {
+                FireEvent("Getting the current weather for zip code " + zipCode);
                 var currentWeather = GetWeatherObjectByZipAsync(zipCode, "").GetAwaiter().GetResult();
-                FireEvent("Writing to the file system for zip code " + zipCode);
-
-                // Concerned about using File append because of file locks
-                _fileSystem.File.AppendAllText(APIConfiguration.SaveFileLocation, currentWeather.CreateLogLine() + Environment.NewLine);
+                
+                SaveCurrentWeatherValues(currentWeather);
             }
             catch (Exception exp)
             {

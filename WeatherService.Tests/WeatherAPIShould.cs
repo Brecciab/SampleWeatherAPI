@@ -84,7 +84,8 @@ namespace WeatherService.Tests
         }
 
         [Test]
-        public void GetWeatherObjectByZipAsync()
+        [TestCase("{\"main\": {\"temp\": \"280.44\"}}", "45.122" )]
+        public void GetWeatherObjectByZipAsync_mockedCall(string fakeJSON, string fakeTemperature)
         {
             // ARRANGE
             var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
@@ -100,7 +101,7 @@ namespace WeatherService.Tests
                .ReturnsAsync(new HttpResponseMessage()
                {
                    StatusCode = System.Net.HttpStatusCode.OK,
-                   Content = new StringContent("{\"main\": {\"temp\": \"280.44\"}}"),
+                   Content = new StringContent(fakeJSON),
                })
                .Verifiable();
 
@@ -117,7 +118,7 @@ namespace WeatherService.Tests
 
             //ASSERT
             Assert.That(currentWeather, Is.Not.Null);
-            Assert.That(currentWeather.Result.Temperature, Is.EqualTo("45.122"));
+            Assert.That(currentWeather.Result.Temperature, Is.EqualTo(fakeTemperature));
 
             // also check the 'http' call was like we expected it
             var expectedUri = new Uri("http://test.com/");
@@ -127,5 +128,45 @@ namespace WeatherService.Tests
                   && req.RequestUri == expectedUri // to this uri
                   ), ItExpr.IsAny<System.Threading.CancellationToken>());
         }
+
+        [Test]
+        [TestCaseSource("TestCurrentWeather")]
+        public void SaveCurrentWeatherValues(CurrentWeather currentWeather )
+        {
+            var mockFileSystem = new MockFileSystem();
+            var mockInputFile = new MockFileData("test1\test2\test3");
+            mockFileSystem.AddFile(@"C:\temp\in.txt", mockInputFile);
+
+            var sut = new WeatherAPI(mockFileSystem, null);
+            sut.APIConfiguration.SaveFileLocation = @"C:\temp\in.txt";
+            sut.ResetSaveFile(@"C:\temp\in.txt");
+
+            var result = sut.SaveCurrentWeatherValues(currentWeather);
+
+            MockFileData mockOutputFile = mockFileSystem.GetFile(@"C:\temp\in.txt");
+
+            string[] outputLines = mockOutputFile.TextContents.SplitLines();
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(outputLines.Count, Is.EqualTo(1));
+            Assert.That(outputLines[0].ToString(), Is.EqualTo(currentWeather.CreateLogLine()));
+
+
+            
+        }
+
+        static object[] TestCurrentWeather =
+        {
+            new CurrentWeather() { Message = "Testing the writing", Cod = "404" },
+            new CurrentWeather() { Message = "Testing the writing", Cod = "200" },
+            new CurrentWeather() { Message = "Testing the writing", Cod = "503" },
+        };
+
+        static object[] TestFakeJSON =
+        {
+            "{'main': {'temp': '280.44'}}",
+            "{'main': {'temp': '380.44'}}",
+            "{'main': {'temp': '480.44'}}",
+        };
     }
 }
