@@ -11,6 +11,6 @@ Didn't get a chance to create the "loadFromFile" for the configuration piece but
 
 I wasn't sure about XUnit or NUnit so I went with NUnit since most people I know still use that. I was not sure the standard at your company.
 
-I would like to add some mock service calls, correct the timer problem for the test and a few other things.
+I would like to correct the timer problem for the test and a few other things.
 
 Now I am just adding stuff for fun... Adding a database interaction because... why not?
